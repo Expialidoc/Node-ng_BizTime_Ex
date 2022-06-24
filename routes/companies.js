@@ -8,7 +8,7 @@ const slugify = require("slugify");
 
 router.get("/", async function(req, res, next) {
   try {
-    const result = await db.query("SELECT code, name FROM companies ORDER BY name")
+    const result = await db.query("SELECT code, name, description FROM companies ORDER BY name")
     return res.json({ companies: result.rows});
   } catch(err){
     return next(err)
@@ -20,8 +20,10 @@ router.get("/:code", async function (req, res, next) {
     let code = req.params.code;
 
     const compResult = await db.query(
-          `SELECT code, name, description
-           FROM companies WHERE code = $1`, [code]
+      `SELECT c.code, c.name, c.description, i.industry FROM companies AS c
+      LEFT JOIN co_indu AS ci ON c.code = ci.co_id
+      LEFT JOIN industries AS i ON  ci.indu_code = i.code
+      WHERE c.code = $1`, [code]
     );
 
     const invResult = await db.query(
@@ -48,8 +50,8 @@ router.get("/:code", async function (req, res, next) {
 //Add new company
 router.post("/", async function (req, res, next) {
   try {
-    let {name, description} = req.body;
-    let code = slugify(name, {lower: true});
+    let {code,name, description} = req.body;
+//    let code = slugify(name, {lower: true});
   /*  {"code": "google","name": "google","description": "Googling"} */
     const result = await db.query(
           `INSERT INTO companies (code, name, description) VALUES ($1, $2, $3) 
